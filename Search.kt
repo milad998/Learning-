@@ -86,4 +86,40 @@ override fun <T : ViewModel> create(modelClass: Class<T>): T {
 return ChatViewModel(application, userId, chatWithUserId) as T
 }
 }
+Composable
+fun ChatApp(app: Application = Application()) {
+val navController = rememberNavController()
+var currentUserId by remember { mutableStateOf<String?>(null) }
+
+NavHost(  
+    navController = navController,  
+    startDestination = if (currentUserId == null) "login" else "users"  
+) {  
+    composable("login") {  
+        LoginScreen(onLoggedIn = {  
+            currentUserId = it  
+            navController.navigate("users")  
+        })  
+    }  
+
+    composable("users") {  
+        currentUserId?.let { uid ->  
+            UserListScreen(currentUserId = uid) { chatWithId ->  
+                navController.navigate("chat/$chatWithId")  
+            }  
+        }  
+    }  
+
+    composable(  
+        route = "chat/{user2}",  
+        arguments = listOf(navArgument("user2") { type = NavType.StringType })  
+    ) { backStackEntry ->  
+        val chatWithId = backStackEntry.arguments?.getString("user2")!!  
+        val factory = ChatViewModelFactory(app, currentUserId!!, chatWithId)  
+        val viewModel: ChatViewModel = viewModel(factory = factory)  
+        ChatScreen(viewModel)  
+    }  
+}
+
+}
 
